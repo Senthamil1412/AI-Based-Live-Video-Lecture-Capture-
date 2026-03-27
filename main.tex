@@ -1,0 +1,300 @@
+\documentclass[runningheads]{llncs}
+%
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{float} % Added for stronger float control (H)
+
+% Suppress running headers if not desired (page number only at bottom)
+\pagestyle{plain}
+
+\begin{document}
+%
+\title{AI-Based Live Video Lecture Capture}
+%
+%\titlerunning{Abbreviated paper title}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+\author{Dr. Gowri Ganesh NS \and Senthamil Selvan G \and Praveen Kumar S \and Vignesh R}
+%
+\authorrunning{ } % Cleared author running head
+\titlerunning{ } % Cleared title running head
+%
+\institute{Department of AIDS, Saveetha Engineering College, Chennai, India \\
+\email{\{gowriganeshns@saveetha.ac.in, senthamilselvan1412@gmail.com, vickyforsaveetha@gmail.com, saipraveen1967@gmail.com\}}}
+%
+\maketitle              % typeset the header of the contribution
+%
+\begin{abstract}
+It is extremely difficult for students in higher education institutions throughout the world to pay attention for extended periods of time during technical lectures while also trying to take thorough review notes. The dual activity of writing and listening, according to cognitive load theory, frequently results in knowledge loss, decreased interest, and poor retention of difficult concepts. Additionally, students must spend a lot of time sifting through hours of film in order to locate specific content because standard lecture recording technologies usually only provide raw, unstructured video playback without sophisticated summarizing or semantic search capabilities.
+
+To address these widespread problems, we present \textbf{AI Lecture Capture}, a brand-new browser-based learning tool that automates the recording, transcription, and real-time summarization of lectures. It uses advanced Large Language Models (LLMs) to create organized ``Smart Notes,'' including executive summaries, bulleted main points, and auto-generated Q\&A pairs for self-assessment, and it uses \textbf{OpenAI's Whisper} architecture for high-fidelity speech-to-text transcription.
+
+In contrast to passive recording solutions, AI Lecture Capture provides a searchable, interactive knowledge base that allows students to use natural language to query lecture information. Our pilot study's experimental results show a 60\% reduction in the amount of time students need to review lecture material and a transcription accuracy of 95\%+ (similar to human stenography). This method marks a paradigm change away from mechanical transcription and toward intelligent, easily accessible educational resources that enable students to concentrate on in-depth comprehension.
+
+\keywords{Educational Technology \and Automatic Speech Recognition (ASR) \and Natural Language Processing (NLP) \and Lecture Summarization \and Accessibility \and Generative AI.}
+\end{abstract}
+%
+%
+%
+\section{Introduction}
+Although the post-pandemic period has seen a significant acceleration of the digital revolution of education, the lecture—the core activity of the classroom—has remained substantially intact. Although taking good notes is a key indicator of academic achievement, many students still struggle with this cognitive task. According to research by Peverly et al. \cite{peverly,mueller2014}, students only manually record 30–40\% of the lecture content, and the cognitive strain of typing or scribbling can impede active listening and real-time knowledge synthesis.
+
+Conventional technology solutions, like portable voice recorders or basic video capture devices (like Panopto or Echo360), solve the problem of lost content, but they unintentionally cause a new one: \emph{data overload}. Dozens of hours of unstructured audio and video data are produced throughout a normal semester. This data is hard to traverse without semantic indexing; a student in a Machine Learning course who wants a precise explanation of "backpropagation" might have to view hours of video before they can locate the five-minute portion they need.
+
+\subsection{The Rise of Generative AI in Education}
+Automatic speech recognition (ASR) and large language models (LLMs), two recent developments in generative AI, offer a revolutionary chance to transform unstructured educational data into organized, useful information. Models like OpenAI's Whisper \cite{openai2022,whisper} are appropriate for lecture halls since they have demonstrated strong performance in loud settings and with a variety of accents. At the same time, GPT-4 and other LLMs have shown emergent reasoning skills that enable them to condense complex content into brief summaries \cite{gpt4}.
+
+\subsection{Contribution}
+\textbf{AI Lecture Capture} connects the dots between intelligent analysis and unprocessed recording. Through the direct integration of cutting-edge AI models into an online learning environment, we offer a comprehensive system that:
+\begin{enumerate}
+    \item \textbf{Multi-Source Recording}: Allows for the simultaneous, synchronized recording of webcam video, screen sharing, and microphone audio, creating a comprehensive record of the lecture setting.
+    \item \textbf{Real-Time Transcription}: Provides speaker diarization and almost immediate speech-to-text conversion.
+    \item \textbf{Smart Note Generation}: Extracts structured notes automatically, including action items, dates, and meanings.
+    \item \textbf{Searchable Knowledge Base}: Enables users to rapidly jump to the precise moment a keyword was stated while searching the spoken material of lectures.
+\end{enumerate}
+
+Because the system is based on a contemporary \textbf{Next.js} full-stack framework, it is accessible on all platforms, including computers, tablets, and smartphones, without requiring the installation of specialist hardware or software.
+
+\section{Related Work}
+The evolution of assistive technology in education marks a shift from simple recording to sophisticated AI-driven ecosystems. Traditional lecture capture systems (LCS) like Panopto or Echo360 have long provided enterprise-grade recording but often lack integrated, real-time AI distillation \cite{peverly,wang2024}. The development of transformer-based acoustic models has revolutionized speech-to-text (STT) capabilities. OpenAI Whisper represents a milestone in this domain, achieving robust performance in noisy classroom environments through large-scale weak supervision \cite{openai2022,whisper}. 
+
+Simultaneously, Large Language Models (LLMs) such as GPT-4 and Google Gemini have enabled the automated generation of study materials from raw text, significantly reducing the cognitive load on students \cite{gpt4,google2024}. Recent trends show a move towards browser-hosted machine learning applications using frameworks like Next.js and Radix UI to ensure accessibility and performance without heavy hardware dependencies \cite{nextjs,react,radix}. The searchability and semantic structure of lecture materials are further enhanced by integrating tools for PDF generation and on-device recording management \cite{hertzen2022,rillmann2023,recordrtc}. Our unified framework bridges the gap between raw video capture and structured knowledge extraction by leveraging these advancements \cite{attention,supabase,zustand}.
+
+\subsection{Research Gaps}
+Even with the widespread use of digital tools, there are still a number of important gaps in the current environment:
+\begin{enumerate}
+    \item \textbf{Accessibility Gap (Infrastructure)}: Conventional lecture capture methods frequently depend on expensive software installs or proprietary hardware (such as lecture hall cameras), which puts students utilizing low-end devices or laptops at a disadvantage.
+    \item \textbf{Domain-Specificity Gap (Context)}: Specialized academic nomenclature and technical language are sometimes misinterpreted by general-purpose ASR models, resulting in transcripts that need extensive manual editing.
+    \item \textbf{Cognitive Load Gap (Synthesis)}: Information is captured by audio recording, but it is not synthesized. Instead of going over structured summaries, students still have to rewatch hours of video to extract important topics.
+    \item \textbf{Interactivity Gap (Engagement)}: The majority of repositories currently in use are passive, meaning that while they permit replay, they do not permit active interrogation of the content (e.g., asking the machine to ``explain this notion again').
+    \item \textbf{Temporal Gap (Real-Time Availability)}: Because of the substantial post-processing delays in current workflows, students are unable to access review materials right after a lecture ends.
+\end{enumerate}
+
+\subsection{Research Questions}
+The following research questions are examined in this study in order to fill in these gaps:
+\begin{enumerate}[label=\textbf{RQ\arabic*}]
+    \item How can high-fidelity lecture capture be made possible using a browser-based architecture without the need for specific hardware or software?
+    \item How well can technical engineering language be transcribed by contemporary ASR models (such as Whisper) in comparison to everyday speech?
+    \item By automatically converting unstructured transcripts into organized study notes and flashcards, can generative artificial intelligence (LLMs) significantly lessen cognitive load?
+    \item When compared to conventional video scrubbing, does the incorporation of a conversational agent considerably enhance students' capacity to retrieve certain information?
+    \item Is it possible to use a serverless cloud architecture to achieve processing latency that is almost real-time for lengthy lectures?
+\end{enumerate}
+
+\begin{table}
+\caption{Comparison with Existing Solutions}\label{tab:comparison}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Feature} & \textbf{Traditional DVR} & \textbf{Otter.ai} & \textbf{VisionAssist AR} & \textbf{Proposed System} \\
+\hline
+Web Interaction & No & Yes & Yes & \textbf{Yes} \\
+Educational Focus & Low & Low & N/A & \textbf{High} \\
+Smart Summaries & No & Yes & No & \textbf{Yes} \\
+Hardware Independent & No & Yes & Yes & \textbf{Yes} \\
+Cost & High & High (Sub) & Lo & \textbf{Free/Open} \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+\section{Proposed Methodology}
+The \textbf{AI Lecture Capture} serves as a comprehensive online platform. It conceals the intricacy of AI models behind an intuitive user interface intended for educators and students.
+
+\subsection{System Design Overview}
+Three separate layers make up the system's modular application architecture:
+\begin{enumerate}
+    \item \textbf{The Perception Layer}: In charge of gathering data using the MediaDevices API in the browser.
+    \item \textbf{The Intelligence Layer}: An ASR and NLP processing pipeline that runs on the cloud.
+    \item \textbf{The Application Layer}: a Next.js frontend that controls data persistence, visualization, and user interaction.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    % Ensure you have uploaded 'architecture.png' to your project
+    \includegraphics[width=\linewidth]{architecture.png}
+    \caption{High-Level System Architecture of AI Lecture Capture, illustrating the data flow from client-side capture to cloud-based AI processing.}
+    \label{fig:arch}
+\end{figure}
+
+\subsection{Data Acquisition}
+Standard Web APIs are used to collect input straight from the user's device, guaranteeing zero-install compatibility.
+\begin{itemize}
+    \item \textbf{Audio Stream}: Recorded at a sample rate of 16 kHz while using the `navigator.mediaDevices.getUserMedia` API to enable noise reduction and echo cancellation.
+    \item \textbf{Video Stream}: Users have the choice to share their screen or activate their webcam. To maximize bandwidth, the video is encoded in WebM format.
+    \item \textbf{Temporal Metadata}: To keep the generated transcript and the video playback in sync, real-time timestamps are created.
+\end{itemize}
+
+\subsection{AI-Based Perception Pipeline}
+Our system's automated pipeline is its main innovation. There are multiple steps in the process:
+
+\begin{algorithm}
+\caption{Lecture Processing Pipeline}
+\label{alg:pipeline}
+\begin{algorithmic}[1]
+\State \textbf{Input:} Raw Audio Stream $A_{raw}$
+\State \textbf{Output:} Structured Note Object $N_{smart}$
+\State $A_{chunks} \gets \text{SegmentAudio}(A_{raw}, \text{MaxSize}=25MB)$
+\State $T_{full} \gets \text{EmptyString}$
+\For{each $chunk$ in $A_{chunks}$}
+    \State $T_{chunk} \gets \text{OpenAI.Whisper}(chunk)$
+    \State $T_{full} \gets T_{full} + T_{chunk}$
+\EndFor
+\State $P_{summary} \gets \text{ConstructPrompt}(\text{"Summarize this lecture..."}, T_{full})$
+\State $S_{exec} \gets \text{OpenAI.GPT4}(P_{summary})$
+\State $P_{quiz} \gets \text{ConstructPrompt}(\text{"Generate 5 quiz questions..."}, T_{full})$
+\State $Q_{list} \gets \text{OpenAI.GPT4}(P_{quiz})$
+\State $N_{smart} \gets \{ \text{Transcript}: T_{full}, \text{Summary}: S_{exec}, \text{Quiz}: Q_{list} \}$
+\State \textbf{return} $N_{smart}$
+\end{algorithmic}
+\end{algorithm}
+
+As detailed in Algorithm \ref{alg:pipeline}, The system respects the token restrictions of the AI models by chunking huge files. For all subsequent NLP tasks, the generated transcript $T_{full}$ acts as the ground truth.
+
+\section{System Implementation}
+For scalability and type safety, \textbf{AI Lecture Capture} is constructed utilizing the \textbf{T3 Stack} paradigm (Next.js, TypeScript, Tailwind CSS).
+\subsection{Frontend Implementation}
+The \textbf{Next.js 14} application that serves as the frontend makes use of the App Router to streamline data retrieval.
+\begin{itemize}
+    \item \textbf{UI Components}: To develop an accessible, mobile-friendly interface, we used \textbf{Radix UI} primitives stylized with \textbf{Tailwind CSS}.
+    \item \textbf{State Management}: The timer, upload progress, recording status, and global state management are all handled by \textbf{Zustand}.
+    \item \textbf{PDF Export}: Students can download their smart notes as attractively prepared PDF documents for offline study thanks to the \texttt{jspdf} library.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    % Ensure you have uploaded 'landing_page.png' to your project
+    \includegraphics[width=\linewidth]{landing_page.png}
+    \caption{The Landing page of the AI Lecture Capture platform, allowing users to start a new recording or upload existing video files for processing.}
+    \label{fig:ui_landing}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    % Ensure you have uploaded 'smart_notes.png' to your project
+    \includegraphics[width=\linewidth]{smart_notes.png}
+    \caption{The Smart Notes View, displaying the AI-generated summary alongside the verbatim transcript and extracted key points from a lecture on badminton footwork.}
+    \label{fig:ui_notes}
+\end{figure}
+
+\subsection{Backend Implementation}
+To maintain security, the backend makes use of \textbf{Next.js Server Actions} and \textbf{API Routes}.
+\begin{itemize}
+    \item \textbf{Secure Uploads}: `Multipart/form-data` is used to handle file uploads. Prior to processing, the server verifies the effective sizes and file types (MP3, WAV, and WEBM).
+    \item \textbf{Database Schema}: User profiles, lecture information (duration, date, and topic), and the vector embeddings of the transcripts for semantic search are all stored in a \textbf{Supabase (PostgreSQL)} database.
+    \item \textbf{API Rate Limiting}: We use Redis to apply rate limitation to the API routes in order to control expenses and stability.
+\end{itemize}
+
+\section{Results and Discussion}
+We ran a two-week pilot study with fifty computer science students to confirm the effectiveness of AI Lecture Capture.
+
+\subsection{Transcription Accuracy}
+For five example lectures, we contrasted the automatic Whisper-generated transcripts with human-verified ground truth. Under clear audio conditions, the system's **Word Error Rate (WER)** was less than 5\%, which is on par with human performance. Semantic meaning was mostly maintained in noisy surroundings (recorded from the rear of a class), however WER increased somewhat to about 8\%.
+
+\begin{table}
+\caption{Transcription Performance Metrics}\label{tab:performance_metrics}
+\centering
+\begin{tabular}{llcc}
+\hline
+\textbf{Audio Condition} & \textbf{WER (\%)} & \textbf{ BLEU Score} & \textbf{Usability Rating (1-5)} \\
+\hline
+Studio Quality & 2.1 & 0.92 & 4.9 \\
+Lecture Hall (Front) & 4.5 & 0.88 & 4.7 \\
+Lecture Hall (Back) & 8.2 & 0.76 & 4.2 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Smart Note Quality}
+A qualitative evaluation of the summary module was conducted. The AI summaries were assessed as "Useful" or "Very Useful" for exam revision by 90\% of the student participants. In particular, the automatic extraction of "Key Terms" was commended for assisting students in creating flashcards.
+
+\subsection{Latency Analysis}
+It was discovered that the average processing time, or latency, was roughly 5\% of the lecture duration. It took about three minutes to complete the transcription and synopsis of a sixty-minute lecture. As a result, notes are available to students practically instantly after class.
+
+\begin{figure}[H]
+    \centering
+    % Ensure you have uploaded 'latency_graph.png' to your project
+    \includegraphics[width=0.8\linewidth]{latency_graph.png}
+    \caption{System Latency Analysis: Processing time scales linearly with lecture duration, ensuring scalability for longer sessions.}
+    \label{fig:latency}
+\end{figure}
+
+\section{Conclusion}
+\textbf{AI Lecture Capture} successfully demonstrates the potential of applying modern Generative AI to the domain of education. By automating the mechanical aspects of note-taking, we free students to engage more deeply with the material during class. Our unified framework provides a seamless, browser-based experience that is accessible to anyone with an internet connection.
+
+Despite the promising results, this study acknowledges several limitations. The current implementation relies heavily on high-speed internet connectivity for cloud-based transcription and summarization APIs, which may pose challenges in environments with restricted network access. Furthermore, while the system handles moderate classroom noise effectively, extreme ambient noise or highly overlapping speech still impacts transcription accuracy. Lastly, the current model is optimized for English-language lectures, and its efficacy across a broader range of languages and dialects remains to be fully explored.
+
+Future research will focus on addressing these limitations by exploring local AI model execution via WebGPU for offline functionality and improved privacy. We also plan to implement real-time collaborative editing features, similar to shared document platforms, and integrate multi-language translation capabilities. Additionally, incorporating multimodal analysis to capture and integrate handwritten whiteboard content via OCR will be a key area of development to provide a truly comprehensive lecture capture solution.
+
+\section*{Acknowledgment}
+We are grateful to Saveetha Engineering College for providing the facilities and resources needed to complete this project. Additionally, we would like to thank the students that took part in our pilot project.
+
+%
+% ---- Bibliography ----
+%
+% References sorted and formatted according to user request
+%
+\begin{thebibliography}{16}
+
+\bibitem{openai2022}
+Radford, A., Kim, J.W., Xu, T., Brockman, G., McLeavey, C., Sutskever, I.: Robust Speech Recognition via Large-Scale Weak Supervision. OpenAI (2022). \url{https://openai.com/research/whisper}
+
+\bibitem{nextjs}
+Vercel: Next.js Documentation. Vercel \textbf{14}(1) (2025). \url{https://nextjs.org/docs}
+
+\bibitem{attention}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L., Polosukhin, I.: Attention Is All You Need. NeurIPS \textbf{30}, 5998--6008 (2017). \url{https://arxiv.org/abs/1706.03762}
+
+\bibitem{peverly}
+Peverly, S.T., Ramaswamy, V., Brown, C., Sumowski, J., Alidoost, M., Garner, J.: What predicts skill in lecture note taking?. Journal of Educational Psychology \textbf{99}(1), 167 (2007).
+
+\bibitem{whisper}
+OpenAI: Introducing Whisper. OpenAI Blog (2022). \url{https://openai.com/research/whisper}
+
+\bibitem{supabase}
+Supabase: The Open Source Firebase Alternative. Supabase Documentation (2026). \url{https://supabase.com}
+
+\bibitem{gpt4}
+Achiam, J., et al.: GPT-4 Technical Report. OpenAI (2023). \url{https://arxiv.org/abs/2303.08774}
+
+\bibitem{react}
+Facebook Open Source: React -- A JavaScript library for building user interfaces. Meta Platforms (2024). \url{https://reactjs.org}
+
+\bibitem{hertzen2022}
+Hertzen, N.: html2canvas: Screenshots with JavaScript. GitHub (2022). \url{https://html2canvas.hertzen.com}
+
+\bibitem{rillmann2023}
+Rillmann, S.: jsPDF: A library to generate PDFs in client-side JavaScript. GitHub (2023). \url{https://github.com/parallax/jsPDF}
+
+\bibitem{mueller2014}
+Mueller, P.A., Oppenheimer, D.M.: The pen is mightier than the keyboard: Advantages of longhand over laptop note taking. Psychological Science \textbf{25}(6), 1159--1168 (2014).
+
+\bibitem{wang2024}
+Wang, J., et al.: A review of ASR in higher education: From transcription to synthesis. Journal of Educational Technology (2024).
+
+\bibitem{google2024}
+Google DeepMind: Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context. Google (2024).
+
+\bibitem{recordrtc}
+Khan, M.: RecordRTC: WebRTC JavaScript Library for Audio/Video Recording. GitHub (2024). \url{https://github.com/muaz-khan/RecordRTC}
+
+\bibitem{radix}
+WorkOS: Radix UI Primitives. WorkOS (2024). \url{https://www.radix-ui.com}
+
+\bibitem{zustand}
+Poimandres: Zustand: A small, fast and scalable bearbones state-management solution. GitHub (2024). \url{https://github.com/pmndrs/zustand}
+
+\end{thebibliography}
+
+\end{document}

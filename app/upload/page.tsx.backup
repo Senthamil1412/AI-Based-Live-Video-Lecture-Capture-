@@ -1,0 +1,608 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+    FiHome,
+    FiUpload,
+    FiVideo,
+    FiCheck,
+    FiLoader,
+    FiFileText,
+    FiZap,
+    FiAlertCircle,
+} from 'react-icons/fi';
+import styles from './upload.module.css';
+
+type ProcessingState = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
+
+interface ProcessingStatus {
+    stage: string;
+    progress: number;
+    message: string;
+}
+
+export default function UploadPage() {
+    const router = useRouter();
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [processingState, setProcessingState] = useState<ProcessingState>('idle');
+    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>({
+        stage: '',
+        progress: 0,
+        message: '',
+    });
+    const [lectureId, setLectureId] = useState<string>('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const files = e.dataTransfer.files;
+        if (files && files[0]) {
+            handleFileSelect(files[0]);
+        }
+    };
+
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files[0]) {
+            handleFileSelect(files[0]);
+        }
+    };
+
+    const handleFileSelect = (file: File) => {
+        // Validate file type
+        if (!file.type.startsWith('video/')) {
+            alert('Please select a valid video file');
+            return;
+        }
+
+        // Validate file size (max 500MB)
+        if (file.size > 500 * 1024 * 1024) {
+            alert('File size must be less than 500MB');
+            return;
+        }
+
+        setSelectedFile(file);
+    };
+
+    const updateProgress = (stage: string, progress: number, message: string) => {
+        setProcessingStatus({ stage, progress, message });
+    };
+
+    const extractAudioFromVideo = async (videoFile: File): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            const videoElement = document.createElement('video');
+            const videoURL = URL.createObjectURL(videoFile);
+            videoElement.src = videoURL;
+
+            videoElement.addEventListener('loadedmetadata', async () => {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                audioContextRef.current = audioContext;
+
+                const source = audioContext.createMediaElementSource(videoElement);
+                const destination = audioContext.createMediaStreamDestination();
+                source.connect(destination);
+                source.connect(audioContext.destination);
+
+                const mediaRecorder = new MediaRecorder(destination.stream);
+                const chunks: Blob[] = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        chunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    URL.revokeObjectURL(videoURL);
+                    resolve(audioBlob);
+                };
+
+                mediaRecorder.start();
+                videoElement.play();
+
+                videoElement.addEventListener('ended', () => {
+                    mediaRecorder.stop();
+                    audioContext.close();
+                });
+            });
+
+            videoElement.addEventListener('error', () => {
+                reject(new Error('Failed to load video'));
+            });
+        });
+    };
+
+    const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                reject(new Error('Speech Recognition not supported'));
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            let transcript = '';
+            const audioURL = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioURL);
+
+            recognition.onresult = (event: any) => {
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        transcript += event.results[i][0].transcript + ' ';
+                    }
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error('Speech recognition error', event.error);
+            };
+
+            recognition.onend = () => {
+                URL.revokeObjectURL(audioURL);
+                resolve(transcript);
+            };
+
+            recognition.start();
+            audio.play();
+
+            audio.addEventListener('ended', () => {
+                recognition.stop();
+            });
+        });
+    };
+
+    const generateSmartNotes = (transcript: string, topic: string = 'default') => {
+        // Enhanced AI processing simulation with better extraction
+        const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+        const summary = sentences.slice(0, 3).join('. ') + '.';
+        const keyPoints = sentences.map(s => s.trim()).filter(s => s.length > 20);
+
+        // Generate topic-specific content
+        let topics: string[] = [];
+        let qaPairs: Array<{ question: string; answer: string }> = [];
+        let actionItems: string[] = [];
+
+        switch (topic) {
+            case 'math':
+                topics = ['Fundamental Concepts', 'Derivatives and Applications', 'Integration Techniques', 'Problem Solving'];
+                qaPairs = [
+                    { question: 'What is the relationship between differentiation and integration?', answer: 'They are inverse operations in calculus.' },
+                    { question: 'Why are practice problems important?', answer: 'They help reinforce understanding and develop problem-solving skills.' }
+                ];
+                actionItems = ['Complete calculus practice problems', 'Review derivative rules', 'Practice integration techniques'];
+                break;
+            case 'science':
+                topics = ['Scientific Principles', 'Research Methods', 'Key Theories', 'Recent Discoveries'];
+                qaPairs = [
+                    { question: 'What is the scientific method?', answer: 'A systematic approach to understanding through observation and experimentation.' },
+                    { question: 'Why is understanding cause and effect important?', answer: 'It helps establish relationships between variables in research.' }
+                ];
+                actionItems = ['Review scientific method steps', 'Study key theories', 'Explore recent research papers'];
+                break;
+            case 'programming':
+                topics = ['Programming Basics', 'Algorithms and Data Structures', 'Design Patterns', 'Code Optimization'];
+                qaPairs = [
+                    { question: 'Why are algorithms important?', answer: 'They are fundamental to writing efficient and scalable code.' },
+                    { question: 'What are design patterns?', answer: 'Reusable solutions to common programming problems.' }
+                ];
+                actionItems = ['Practice coding exercises', 'Study algorithm complexity', 'Review design patterns'];
+                break;
+            case 'business':
+                topics = ['Business Strategy', 'Market Analysis', 'Financial Management', 'Case Studies'];
+                qaPairs = [
+                    { question: 'Why is consumer behavior important?', answer: 'It helps businesses create products that meet customer needs.' },
+                    { question: 'What is strategic planning?', answer: 'Defining business direction and making decisions on resources.' }
+                ];
+                actionItems = ['Analyze market trends', 'Review case studies', 'Study financial models'];
+                break;
+            case 'history':
+                topics = ['Historical Context', 'Primary Sources', 'Historical Patterns', 'Modern Impact'];
+                qaPairs = [
+                    { question: 'Why study history?', answer: 'Understanding the past helps us make sense of the present and future.' },
+                    { question: 'What are primary sources?', answer: 'Original documents from the historical period being studied.' }
+                ];
+                actionItems = ['Read primary source documents', 'Create historical timeline', 'Analyze cause and effect'];
+                break;
+            case 'language':
+                topics = ['Grammar Fundamentals', 'Vocabulary Building', 'Communication Skills', 'Cultural Context'];
+                qaPairs = [
+                    { question: 'Why is grammar important?', answer: 'Grammar provides the structural foundation for effective communication.' },
+                    { question: 'How to improve vocabulary?', answer: 'Through contextual learning, reading, and consistent practice.' }
+                ];
+                actionItems = ['Practice daily conversation', 'Expand vocabulary list', 'Study grammar rules'];
+                break;
+            default:
+                topics = ['Introduction', 'Core Concepts', 'Practical Applications', 'Summary'];
+                qaPairs = [
+                    { question: 'What are the main concepts?', answer: 'The lecture covers fundamental principles and applications.' },
+                    { question: 'How to apply this knowledge?', answer: 'By understanding core concepts and practicing with examples.' }
+                ];
+                actionItems = ['Review lecture notes', 'Practice key concepts', 'Explore additional resources'];
+        }
+
+        return {
+            summary,
+            keyPoints: keyPoints.slice(0, 6),
+            topics,
+            qaPairs,
+            actionItems,
+        };
+    };
+
+    const processVideo = async () => {
+        if (!selectedFile) return;
+
+        try {
+            setProcessingState('processing');
+
+            // Stage 1: Upload/Load video
+            updateProgress('upload', 20, 'Loading video file...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Stage 2: Extract audio
+            updateProgress('extract', 40, 'Extracting audio from video...');
+            const videoURL = URL.createObjectURL(selectedFile);
+
+            // Stage 3: Transcribe with OpenAI Whisper (REAL AI)
+            updateProgress('transcribe', 60, 'Transcribing audio with AI (this may take a while)...');
+
+            let mockTranscript = '';
+            let detectedTopic = 'default';
+            const fileName = selectedFile.name.replace(/\.[^/.]+$/, '');
+
+            try {
+                // Extract audio from video
+                const audioBlob = await extractAudioFromVideo(selectedFile);
+                console.log('Audio extracted, size:', audioBlob.size);
+
+                // Send to Whisper API for transcription
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'audio.webm');
+
+                updateProgress('transcribe', 65, 'Sending to AI transcription service...');
+                const transcriptResponse = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!transcriptResponse.ok) {
+                    const errorData = await transcriptResponse.json();
+                    throw new Error(errorData.error || 'Transcription failed');
+                }
+
+                const transcriptData = await transcriptResponse.json();
+                mockTranscript = transcriptData.transcript;
+                console.log('Real transcription received:', mockTranscript.substring(0, 100) + '...');
+
+            } catch (error: any) {
+                console.error('Transcription error:', error);
+                throw new Error(`Transcription failed: ${error.message}`);
+            }
+
+            // Stage 4: Generate smart notes with GPT-4 (REAL AI)
+            updateProgress('notes', 80, 'Analyzing content with AI...');
+
+            let smartNotes;
+            try {
+                const analysisResponse = await fetch('/api/analyze-content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transcript: mockTranscript,
+                        videoTitle: fileName
+                    }),
+                });
+
+                if (!analysisResponse.ok) {
+                    const errorData = await analysisResponse.json();
+                    throw new Error(errorData.error || 'Analysis failed');
+                }
+
+                smartNotes = await analysisResponse.json();
+                console.log('Real AI analysis received:', smartNotes);
+
+            } catch (error: any) {
+                console.error('Analysis error:', error);
+                throw new Error(`Content analysis failed: ${error.message}`);
+            }
+
+            // Stage 5: Save to "database" (localStorage for demo)
+            'math': [
+                'Welcome to today\'s mathematics lecture. We will explore fundamental concepts in calculus and algebra.',
+                'Let\'s begin by understanding derivatives and their practical applications in real-world scenarios.',
+                'Integration is a powerful tool for solving complex mathematical problems. We will cover various integration techniques.',
+                'Pay special attention to the relationship between differentiation and integration.',
+                'Practice problems are essential for mastering these mathematical concepts.'
+            ],
+                'science': [
+                    'Today we will examine important scientific principles and applications.',
+                    'The scientific method helps us understand natural phenomena through observation and experimentation.',
+                    'Let\'s explore the key theories that form the foundation of modern science.',
+                    'Understanding cause and effect relationships is crucial in scientific research.',
+                    'We will also discuss recent discoveries and their implications for future research.'
+                ],
+                    'programming': [
+                        'Welcome to this programming lecture. Today we will cover essential coding concepts and best practices.',
+                        'Understanding algorithms and data structures is fundamental to becoming a proficient programmer.',
+                        'We will explore object-oriented programming principles and design patterns.',
+                        'Code optimization and debugging techniques are crucial skills for software development.',
+                        'Let\'s look at practical examples and real-world applications of these programming concepts.'
+                    ],
+                        'business': [
+                            'In today\'s business lecture, we will discuss key strategies for organizational success.',
+                            'Understanding market dynamics and consumer behavior is essential for business growth.',
+                            'We will examine various business models and their effectiveness in different markets.',
+                            'Financial management and strategic planning are critical components of business operations.',
+                            'Let\'s analyze case studies of successful companies and learn from their strategies.'
+                        ],
+                            'history': [
+                                'Welcome to our history lesson. Today we will explore significant historical events and their impact.',
+                                'Understanding the past helps us make sense of the present and prepare for the future.',
+                                'We will examine primary sources and historical documents to gain authentic insights.',
+                                'The interconnection between different historical periods reveals patterns of human civilization.',
+                                'Let\'s discuss how historical events shaped modern society and culture.'
+                            ],
+                                'language': [
+                                    'In today\'s language lesson, we will focus on improving communication skills and linguistic understanding.',
+                                    'Grammar forms the structural foundation of effective communication in any language.',
+                                    'We will practice vocabulary expansion through contextual learning and real-life examples.',
+                                    'Understanding cultural nuances is important for mastering a foreign language.',
+                                    'Regular practice with reading, writing, speaking, and listening enhances language proficiency.'
+                                ],
+                                    'default': [
+                                        `Welcome to this comprehensive lecture on ${fileNameWords.join(' ')}. Today we will cover essential concepts and practical applications.`,
+                                        'The main topics include fundamental principles, advanced techniques, and real-world examples.',
+                                        `Understanding ${fileNameWords.slice(0, 2).join(' ')} is crucial for gaining deeper knowledge in this field.`,
+                                        'Let\'s begin with an introduction to the subject matter. This lecture will provide you with valuable insights.',
+                                        'Pay attention to the key points discussed throughout the presentation as they form the foundation of this topic.'
+                                    ]
+        };
+
+        // Detect topic from filename
+        let detectedTopic = 'default';
+        const lowerFileName = fileName.toLowerCase();
+
+        if (lowerFileName.includes('math') || lowerFileName.includes('calculus') || lowerFileName.includes('algebra')) {
+            detectedTopic = 'math';
+        } else if (lowerFileName.includes('science') || lowerFileName.includes('physics') || lowerFileName.includes('chemistry') || lowerFileName.includes('biology')) {
+            detectedTopic = 'science';
+        } else if (lowerFileName.includes('program') || lowerFileName.includes('code') || lowerFileName.includes('software') || lowerFileName.includes('java') || lowerFileName.includes('python')) {
+            detectedTopic = 'programming';
+        } else if (lowerFileName.includes('business') || lowerFileName.includes('marketing') || lowerFileName.includes('finance') || lowerFileName.includes('manage')) {
+            detectedTopic = 'business';
+        } else if (lowerFileName.includes('history') || lowerFileName.includes('historical')) {
+            detectedTopic = 'history';
+        } else if (lowerFileName.includes('language') || lowerFileName.includes('english') || lowerFileName.includes('spanish') || lowerFileName.includes('french')) {
+            detectedTopic = 'language';
+        }
+
+        const selectedTemplate = topicTemplates[detectedTopic];
+        const mockTranscript = selectedTemplate.join(' ');
+
+        // Stage 4: Generate smart notes
+        updateProgress('notes', 80, 'Generating AI smart notes...');
+        const smartNotes = generateSmartNotes(mockTranscript, detectedTopic);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Stage 5: Save to "database" (localStorage for demo)
+        updateProgress('save', 90, 'Saving lecture...');
+        const newLectureId = Date.now().toString();
+        const lectureData = {
+            id: newLectureId,
+            title: selectedFile.name.replace(/\.[^/.]+$/, ''),
+            description: 'Uploaded video lecture',
+            duration: 600, // Mock duration
+            date: new Date().toISOString().split('T')[0],
+            videoUrl: videoURL,
+            transcript: mockTranscript,
+            smartNotes: smartNotes,
+            tags: ['Uploaded', 'Video'],
+            status: 'processed',
+        };
+
+        // Save to localStorage
+        const existingLectures = JSON.parse(localStorage.getItem('lectures') || '[]');
+        existingLectures.push(lectureData);
+        localStorage.setItem('lectures', JSON.stringify(existingLectures));
+
+        updateProgress('complete', 100, 'Processing complete!');
+        setLectureId(newLectureId);
+        setProcessingState('complete');
+
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+            router.push(`/lecture/${newLectureId}`);
+        }, 2000);
+
+    } catch (error) {
+        console.error('Processing error:', error);
+        setProcessingState('error');
+        updateProgress('error', 0, 'Failed to process video. Please try again.');
+    }
+};
+
+const resetUpload = () => {
+    setSelectedFile(null);
+    setProcessingState('idle');
+    setProcessingStatus({ stage: '', progress: 0, message: '' });
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+};
+
+return (
+    <div className={styles.page}>
+        {/* Header */}
+        <header className={styles.header}>
+            <div className="container">
+                <div className={styles.headerContent}>
+                    <Link href="/" className={styles.backButton}>
+                        <FiHome /> Back to Home
+                    </Link>
+                    <h1>Upload Video Lecture</h1>
+                </div>
+            </div>
+        </header>
+
+        <div className="container">
+            <div className={styles.layout}>
+                {processingState === 'idle' && !selectedFile && (
+                    <div className={`glass-card ${styles.uploadCard}`}>
+                        <div
+                            className={`${styles.dropzone} ${isDragging ? styles.dragging : ''}`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <FiUpload className={styles.uploadIcon} />
+                            <h2>Drag & Drop Video</h2>
+                            <p>or click to browse</p>
+                            <div className={styles.fileInfo}>
+                                <span>Supported formats: MP4, WebM, AVI, MOV</span>
+                                <span>Max size: 500MB</span>
+                            </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="video/*"
+                                onChange={handleFileInputChange}
+                                style={{ display: 'none' }}
+                            />
+                        </div>
+
+                        <div className={styles.features}>
+                            <div className={styles.feature}>
+                                <FiVideo />
+                                <span>Automatic transcription</span>
+                            </div>
+                            <div className={styles.feature}>
+                                <FiZap />
+                                <span>AI-powered smart notes</span>
+                            </div>
+                            <div className={styles.feature}>
+                                <FiFileText />
+                                <span>Searchable content</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {selectedFile && processingState === 'idle' && (
+                    <div className={`glass-card ${styles.previewCard}`}>
+                        <h2>Selected Video</h2>
+                        <div className={styles.fileDetails}>
+                            <FiVideo className={styles.fileIcon} />
+                            <div className={styles.fileMetadata}>
+                                <h3>{selectedFile.name}</h3>
+                                <p>Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                                <p>Type: {selectedFile.type}</p>
+                            </div>
+                        </div>
+
+                        <div className={styles.actions}>
+                            <button className="btn btn-secondary" onClick={resetUpload}>
+                                Choose Different Video
+                            </button>
+                            <button className="btn btn-primary btn-lg" onClick={processVideo}>
+                                <FiZap /> Process Video
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {processingState === 'processing' && (
+                    <div className={`glass-card ${styles.processingCard}`}>
+                        <div className={styles.processingHeader}>
+                            <FiLoader className={`${styles.spinner} animate-pulse`} />
+                            <h2>Processing Your Video</h2>
+                            <p>{processingStatus.message}</p>
+                        </div>
+
+                        <div className={styles.progressBar}>
+                            <div
+                                className={styles.progressFill}
+                                style={{ width: `${processingStatus.progress}%` }}
+                            />
+                        </div>
+                        <div className={styles.progressText}>{processingStatus.progress}%</div>
+
+                        <div className={styles.stages}>
+                            <div className={`${styles.stage} ${processingStatus.progress >= 20 ? styles.active : ''}`}>
+                                <FiCheck />
+                                <span>Upload</span>
+                            </div>
+                            <div className={`${styles.stage} ${processingStatus.progress >= 40 ? styles.active : ''}`}>
+                                <FiCheck />
+                                <span>Extract Audio</span>
+                            </div>
+                            <div className={`${styles.stage} ${processingStatus.progress >= 60 ? styles.active : ''}`}>
+                                <FiCheck />
+                                <span>Transcribe</span>
+                            </div>
+                            <div className={`${styles.stage} ${processingStatus.progress >= 80 ? styles.active : ''}`}>
+                                <FiCheck />
+                                <span>Generate Notes</span>
+                            </div>
+                            <div className={`${styles.stage} ${processingStatus.progress >= 100 ? styles.active : ''}`}>
+                                <FiCheck />
+                                <span>Save</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {processingState === 'complete' && (
+                    <div className={`glass-card ${styles.completeCard}`}>
+                        <FiCheck className={styles.successIcon} />
+                        <h2>Processing Complete!</h2>
+                        <p>Your video has been processed and smart notes have been generated.</p>
+                        <div className={styles.actions}>
+                            <button className="btn btn-secondary" onClick={resetUpload}>
+                                Upload Another Video
+                            </button>
+                            <Link href={`/lecture/${lectureId}`} className="btn btn-primary btn-lg">
+                                <FiFileText /> View Lecture
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {processingState === 'error' && (
+                    <div className={`glass-card ${styles.errorCard}`}>
+                        <FiAlertCircle className={styles.errorIcon} />
+                        <h2>Processing Failed</h2>
+                        <p>{processingStatus.message}</p>
+                        <button className="btn btn-primary" onClick={resetUpload}>
+                            Try Again
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+);
+}
