@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎓 LectureLens AI
+# 🎓 AI Live Video Lecture Capture
 ### *Your Lectures. Transcribed. Summarized. Understood.*
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
@@ -11,7 +11,7 @@
 [![Whisper](https://img.shields.io/badge/Whisper--1-Audio_Transcription-412991?style=for-the-badge&logo=openai)](https://openai.com/research/whisper)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-> **LectureLens AI** is a full-stack, multimodal AI web application that captures live lectures, auto-transcribes speech in real time, and generates structured smart notes — powered by Google Gemini 1.5 Pro and GPT-4 Turbo.
+> **AI Live Video Lecture Capture** is a full-stack, multimodal AI web application that captures live lectures, auto-transcribes speech in real time, and generates structured smart notes — powered by Google Gemini 1.5 Pro and GPT-4 Turbo.
 
 </div>
 
@@ -19,9 +19,9 @@
 
 ## ✨ What Makes This Different?
 
-Most note-taking apps just record. **LectureLens AI** *understands*.
+Most note-taking apps just record. **AI Live Video Lecture Capture** *understands*.
 
-| Feature | Traditional Tools | LectureLens AI |
+| Feature | Traditional Tools | AI Live Video Lecture Capture |
 |---|---|---|
 | Recording | ✅ | ✅ |
 | Transcription | ❌ Manual | ✅ Real-time Web Speech API |
@@ -38,7 +38,7 @@ Most note-taking apps just record. **LectureLens AI** *understands*.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     LectureLens AI Core                     │
+│                     AI Live Video Lecture Capture Core                     │
 └─────────────────────────────────────────────────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
@@ -253,7 +253,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🎨 Design Philosophy
 
-LectureLens AI uses a **Glassmorphism-first** design language:
+AI Live Video Lecture Capture uses a **Glassmorphism-first** design language:
 - Dark base with frosted-glass card components
 - HSL-based dynamic color palette (no flat primary colors)
 - Google Fonts: **Inter** (UI) + **Outfit** (Headings)
@@ -331,3 +331,5 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 ⭐ *Star this repo if it helped you!* ⭐
 
 </div>
+
+
